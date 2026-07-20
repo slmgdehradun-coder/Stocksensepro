@@ -1,0 +1,52 @@
+# Durable-storage overlay for StockSense Pro.
+#
+# lib/server/db.ts already knows how to talk to Vercel KV / Upstash Redis over their REST
+# API (KV_REST_API_URL + KV_REST_API_TOKEN) - that's the same protocol implemented by the
+# open-source "serverless-redis-http" (SRH) proxy, so a real, self-hosted Redis can stand
+# in for Upstash with zero code changes. This layers a `redis` + `srh` service on top of
+# the base app and points the app at them.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.durable.yml up -d --build
+#
+# Set SRH_TOKEN in your .env to any long random string (it's a shared secret between the
+# app and the srh proxy only - it never leaves your Docker network). If left unset it
+# falls back to a fixed local-dev token, which is fine for local use but should be set
+# explicitly for anything reachable outside your machine.
+
+services:
+  app:
+    environment:
+      KV_REST_API_URL: http://srh:80
+      KV_REST_API_TOKEN: ${SRH_TOKEN:-local-dev-token}
+      STOCKSENSE_DB_KEY: ${STOCKSENSE_DB_KEY:-stocksense:db:v1}
+    depends_on:
+      srh:
+        condition: service_started
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  srh:
+    image: hiett/serverless-redis-http:latest
+    restart: unless-stopped
+    environment:
+      SRH_MODE: env
+      SRH_TOKEN: ${SRH_TOKEN:-local-dev-token}
+      SRH_CONNECTION_STRING: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  redis-data:
+    driver: local

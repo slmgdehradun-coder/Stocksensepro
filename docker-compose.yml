@@ -1,0 +1,46 @@
+# StockSense Pro - default Docker Compose setup.
+#
+# This starts a single app container using local JSON-file storage (persisted in the
+# `stocksense-data` volume). This is fine for local use, demos and small deployments,
+# but the data resets whenever the volume is removed and does not survive being
+# reshuffled across multiple replicas.
+#
+# For durable, Redis-backed storage that survives container recreation and works with
+# more than one replica, layer docker-compose.durable.yml on top - see DOCKER.md:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.durable.yml up -d --build
+#
+# Quick start:
+#   cp .env.docker.example .env   # then fill in AUTH_SECRET / ADMIN_PASSWORD / etc.
+#   docker compose up -d --build
+#   open http://localhost:3000
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+    image: stocksense-pro:latest
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+    volumes:
+      - stocksense-data:/app/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('node:http').get('http://127.0.0.1:3000/api/health',res=>process.exit(res.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+volumes:
+  stocksense-data:
+    driver: local

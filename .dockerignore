@@ -1,0 +1,29 @@
+node_modules
+.next
+.git
+.vercel
+.vercelignore
+
+# Local/dev only - never bake local data or secrets into the image
+data
+*.log
+.env
+.env.local
+.env*.local
+!.env.example
+
+# Editor/OS cruft
+.DS_Store
+.vscode
+.idea
+
+# Build/test artifacts not needed inside the image
+coverage
+tsconfig.tsbuildinfo
+
+# Docs and Docker meta-files aren't needed inside the build context
+docs
+*.md
+Dockerfile
+docker-compose*.yml
+.dockerignore
