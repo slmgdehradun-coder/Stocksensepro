@@ -9,7 +9,3 @@ TECHNICAL_AUDIT.md
 SUBSCRIPTION_AUDIT.md
 tsconfig.tsbuildinfo
 data
-.env
-.env.*
-!.env.example
-!.env.docker.example

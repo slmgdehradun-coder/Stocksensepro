@@ -1,14 +1,15 @@
 # StockSense Pro - Enhancement Notes
 
-This documents six passes: (1) a smarter, context-aware technical prediction engine
+This documents seven passes: (1) a smarter, context-aware technical prediction engine
 plus a full Docker deployment setup (2026-07-16), (2) a Fundamental Analysis module
 (2026-07-17), (3) Market Cap/Altman-Z fixes, Magic Formula/Graham Number/Momentum Score,
 and Sector Analysis (2026-07-18), (4) an enterprise-grade UI redesign of the
 Fundamentals page (2026-07-19), (5) an app-wide design system, working mobile
-navigation on every page, and a Dashboard visual pass (2026-07-19), and (6) a
-risk-reward bugfix and multi-target (T1/T2/T3) trade plan engine (2026-07-20).
-Everything is additive and backward compatible - no existing function signature lost
-its old behavior, only gained an optional extra one.
+navigation on every page, and a Dashboard visual pass (2026-07-19), (6) a
+risk-reward bugfix and multi-target (T1/T2/T3) trade plan engine (2026-07-20), and (7)
+an AuthModal layout bugfix and token migration (2026-07-20). Everything is additive and
+backward compatible - no existing function signature lost its old behavior, only
+gained an optional extra one.
 
 ## 1. Prediction engine (`lib/aiPrediction.ts`)
 
@@ -143,7 +144,7 @@ fundamentals change far slower than price data) and `app/fundamentals/page.tsx`
 across all pages.
 
 **Verified the same way as Phase 1** (no working `next build`/`vitest` in this sandbox -
-see section 12 below): `tsc --noEmit` passes with zero errors, and the compiled scoring
+see section 13 below): `tsc --noEmit` passes with zero errors, and the compiled scoring
 engine was run directly against a synthetic healthy company (9/9 Piotroski, Altman
 "Safe", Strong Buy) and a synthetic distressed one (1/9 Piotroski, Altman "Distress",
 Strong Sell), plus a sparse-data case confirming nothing gets fabricated when inputs are
@@ -556,7 +557,53 @@ present (pure-ATR fallback), and every existing test scenario's directional asse
 before because the underlying math is now more disciplined, not because anything broke.
 25 new assertions added across `tests/aiPrediction.test.ts` covering all of the above.
 
-## 12. Verification (and its limits)
+## 12. Bugfix - AuthModal appearing "half cut off" on open, plus token migration (2026-07-20)
+
+**Reported via screenshot of the live deployment:** opening the sign-in modal showed
+only its middle/bottom portion (password hint, disclaimer, Google section, submit
+button) with the name/email/password fields above the fold seemingly missing.
+
+**Root cause:** the modal always rendered a full Google Sign-In UI block - a section
+divider, a disclaimer checkbox, and (since this deployment has no
+`NEXT_PUBLIC_GOOGLE_CLIENT_ID` configured, confirmed in the same screenshot) a large
+amber warning box telling the user Google Sign-In is disabled - regardless of whether
+Google Sign-In was even available. That's substantial vertical space spent, on every
+single open, on a feature the end user has no way to enable themselves. Combined with a
+`max-h-[92vh]` scrollable container, this pushed the actually-usable content down far
+enough that on a modest browser window it looked broken rather than merely scrollable.
+
+**Fix, in `components/AuthModal.tsx`:**
+- The entire Google section (divider, checkbox, and either the real button or the
+  warning box) now only renders when `NEXT_PUBLIC_GOOGLE_CLIENT_ID` is actually
+  configured - there is nothing useful to show an end user about a feature only the
+  site operator can enable, so nothing is shown.
+- The "Free by default / Admin-approved Pro" info panel now only renders during
+  signup, not login - it's onboarding context a returning user doesn't need, and
+  skipping it shortens the far more common login path significantly.
+- Added a scroll-reset effect that scrolls the modal to the top on every open and on
+  every login/signup mode switch, as a second, independent safeguard against the modal
+  ever appearing to open "mid-scroll" regardless of the exact cause.
+- Fixed a real, separate checkbox-styling bug found while making these changes: the
+  checkboxes used a `text-*` utility to try to tint their native checked-state fill,
+  but that only affects text color, not a checkbox's fill - the correct CSS property is
+  `accent-color`, now applied via Tailwind's `accent-*` utility.
+
+**Also migrated this component to the design tokens from section 10** (`bg-ink`,
+`text-fg`, `text-accent`, etc.) while working in this file, since it's one of the most
+visible components in the app - every visitor sees it. Caught and fixed a contrast bug
+in the same pass: the submit button's background became the amber accent color but was
+initially left with light (`text-fg`) text from a mechanical find-and-replace, which
+would have been low-contrast and hard to read - corrected to dark (`text-ink`) text,
+matching every other amber-filled button already in the design system.
+
+**Verified:** `tsc --noEmit` clean; a scripted div-balance check (open/self-closing vs.
+closing tag counts) confirms the JSX is structurally sound after the edits; every
+custom Tailwind token class in the file was cross-checked against `globals.css`'s
+declared tokens, with zero mismatches. As with the rest of the app-wide UI pass, actual
+visual rendering could not be confirmed in this sandbox - please check the modal on the
+live deployment after this update ships and confirm the fields are visible on open.
+
+## 13. Verification (and its limits)
 
 This environment could not run `pnpm install`, `next build`, or `vitest` directly: the
 uploaded project's `node_modules` was installed on Windows (all native binaries -

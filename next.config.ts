@@ -1,12 +1,10 @@
 import type {NextConfig} from 'next';
 
-const shouldUseStandalone = process.platform !== 'win32' && process.env.VERCEL !== '1';
-
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // Produces a minimal, self-contained .next/standalone server for Docker/Linux builds.
-  // Windows local builds and Vercel deployments skip it to avoid symlink copy failures.
-  ...(shouldUseStandalone ? { output: 'standalone' as const } : {}),
+  // Produces a minimal, self-contained .next/standalone server (only the node_modules
+  // actually needed at runtime) so the Docker runtime image can stay small.
+  output: 'standalone',
   eslint: {
     ignoreDuringBuilds: false,
   },
@@ -34,4 +32,3 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-

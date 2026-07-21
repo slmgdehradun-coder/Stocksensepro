@@ -1,0 +1,169 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* Typography tokens for the "institutional terminal" design language used across the
+     app. Deliberately NOT overriding --font-sans/--font-mono so any markup that hasn't
+     been migrated yet keeps rendering with the browser default stack rather than
+     breaking. Must be `@theme inline` (not plain `@theme`) because these values
+     reference next/font's runtime CSS variables (--font-space-grotesk /
+     --font-ibm-plex-mono, set via the .variable className on <body>) rather than static
+     values known at CSS compile time - with plain `@theme`, Tailwind resolves the
+     variable at build time and the custom fonts silently fail to apply. */
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-data: var(--font-ibm-plex-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* --------------------------------------------------------------------------------
+     Color system. Named after a trading-terminal heritage (amber phosphor on dark
+     glass) rather than a generic SaaS blue, while keeping the red/green convention for
+     gains and losses - that convention is domain-correct, not a lazy default, and
+     changing it would make the app harder to read for anyone who has used any other
+     financial tool. Each token maps automatically to bg-*/text-*/border-*/ring-*
+     utilities via Tailwind v4's @theme color convention.
+     -------------------------------------------------------------------------------- */
+  --color-ink: #0a0e16;
+  --color-ink-raised: #0d1220;
+  --color-surface: #10151f;
+  --color-surface-raised: #161c2b;
+  --color-border-hair: #212838;
+  --color-border-strong: #2e3750;
+
+  --color-fg: #e7eaf2;
+  --color-fg-muted: #93a0b8;
+  --color-fg-subtle: #5d6b85;
+
+  /* Signature accent: terminal amber. Used sparingly - nav underline, primary actions,
+     the verdict/signal border treatment - never as a background wash. */
+  --color-accent: #e3a23b;
+  --color-accent-strong: #f5b85b;
+  --color-accent-soft: #e3a23b1f;
+
+  --color-bullish: #34d399;
+  --color-bullish-soft: #34d3991f;
+  --color-bearish: #fb7185;
+  --color-bearish-soft: #fb71851f;
+  --color-info: #60a5fa;
+  --color-info-soft: #60a5fa1f;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+  --shadow-elevated: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-ink);
+    color: var(--color-fg);
+  }
+
+  /* Numbers are the product in a finance app - every price, percentage, ratio, and
+     score renders in the monospace data face with tabular figures so columns of
+     numbers actually line up, instead of quietly falling back to the display font. */
+  .data-mono {
+    font-family: var(--font-data);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    background-color: var(--color-accent-soft);
+    color: var(--color-accent-strong);
+  }
+
+  /* Visible keyboard focus everywhere, not just on inputs - required for the app to be
+     usable without a mouse, and never suppressed with outline:none. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 0.375rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Slim, low-contrast scrollbar that matches the terminal surface instead of the
+     browser default, on the WebKit/Blink engines used by the vast majority of
+     visitors; Firefox falls back to its own default gutter, which is an acceptable,
+     unobtrusive degradation. */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--color-border-strong);
+    border-radius: 999px;
+    border: 2px solid var(--color-ink);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-fg-subtle);
+  }
+}
+
+@layer components {
+  /* Signature motif: a thin amber signal-trace, used consistently on the active nav
+     item, section eyebrows, and the AI verdict card - evokes a ticker/signal line
+     rather than being a decorative flourish, and is the one recurring "loud" element
+     against an otherwise disciplined, quiet surface. */
+  .signal-underline {
+    position: relative;
+  }
+  .signal-underline::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--color-accent), transparent);
+  }
+
+  .surface-card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border-hair);
+    border-radius: 1rem; /* matches the rest of the app's existing rounded-2xl cards */
+    box-shadow: var(--shadow-card);
+  }
+
+  .surface-card-interactive {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border-hair);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-card);
+    transition: border-color 150ms ease, transform 150ms ease;
+  }
+  .surface-card-interactive:hover {
+    border-color: var(--color-border-strong);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.1875rem 0.625rem;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-width: 1px;
+    border-style: solid;
+    white-space: nowrap;
+  }
+  .badge-bullish { background-color: var(--color-bullish-soft); border-color: var(--color-bullish); color: var(--color-bullish); }
+  .badge-bearish { background-color: var(--color-bearish-soft); border-color: var(--color-bearish); color: var(--color-bearish); }
+  .badge-accent { background-color: var(--color-accent-soft); border-color: var(--color-accent); color: var(--color-accent-strong); }
+  .badge-info { background-color: var(--color-info-soft); border-color: var(--color-info); color: var(--color-info); }
+  .badge-neutral { background-color: var(--color-surface-raised); border-color: var(--color-border-strong); color: var(--color-fg-muted); }
+}
