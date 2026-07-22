@@ -12,13 +12,11 @@
   --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-data: var(--font-ibm-plex-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
 
-  /* --------------------------------------------------------------------------------
+    /* --------------------------------------------------------------------------------
      Color system. Named after a trading-terminal heritage (amber phosphor on dark
-     glass) rather than a generic SaaS blue, while keeping the red/green convention for
-     gains and losses - that convention is domain-correct, not a lazy default, and
-     changing it would make the app harder to read for anyone who has used any other
-     financial tool. Each token maps automatically to bg-*/text-*/border-*/ring-*
-     utilities via Tailwind v4's @theme color convention.
+     glass) rather than a generic SaaS blue, while keeping the red/green convention
+     for gains and losses. These tokens generate Tailwind v4 utility classes through
+     the @theme color convention.
      -------------------------------------------------------------------------------- */
   --color-ink: #0a0e16;
   --color-ink-raised: #0d1220;
